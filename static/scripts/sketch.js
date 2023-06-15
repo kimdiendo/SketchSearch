@@ -123,10 +123,6 @@ function mouseMoved() {
     }
 }
 }
-
-
-
-
 function toggleEraseMode() {
   eraseMode = !eraseMode; // Chuyển đổi giá trị trạng thái eraseMode
   const eraseButton = document.getElementById("erase");
@@ -198,8 +194,8 @@ const preprocess = async (cb) => {
 };
 
 const drawPie = (top5) => {
-    const probs = [];
-    const labels = [];
+    const probs = [];//tạo mảng xác suất
+    const labels = []; //tạo mảng lưu các labels
 
     for (const pred of top5) {
         const prop = +pred.probability.toPrecision(3);
@@ -250,19 +246,28 @@ const drawPie = (top5) => {
 };
 
 const getMinimumCoordinates = () => {
-    let min_x = Number.MAX_SAFE_INTEGER;
-    let min_y = Number.MAX_SAFE_INTEGER;
+  let min_x = Number.MAX_SAFE_INTEGER;
+  let min_y = Number.MAX_SAFE_INTEGER;
 
+  for (const stroke of imageStrokes_copy) {
+      for (let i = 0; i < stroke[0].length; i++) {
+          min_x = Math.min(min_x, stroke[0][i]);
+          min_y = Math.min(min_y, stroke[1][i]);
+      }
+  }
+
+  return [Math.max(0, min_x), Math.max(0, min_y)];
+};
+// Reposition image to top left corner
+const repositionImage = () => {
+    const [min_x, min_y] = getMinimumCoordinates();
     for (const stroke of imageStrokes_copy) {
         for (let i = 0; i < stroke[0].length; i++) {
-            min_x = Math.min(min_x, stroke[0][i]);
-            min_y = Math.min(min_y, stroke[1][i]);
+            stroke[0][i] = stroke[0][i] - min_x + REPOS_PADDING;//tạo x mới
+            stroke[1][i] = stroke[1][i] - min_y + REPOS_PADDING;//tạo y mới
         }
     }
-
-    return [Math.max(0, min_x), Math.max(0, min_y)];
 };
-
 const getBoundingBox = () => {
     repositionImage();
 
@@ -310,22 +315,12 @@ const getBoundingBox = () => {
     };
 };
 
-// Reposition image to top left corner
-const repositionImage = () => {
-    const [min_x, min_y] = getMinimumCoordinates();
-    for (const stroke of imageStrokes_copy) {
-        for (let i = 0; i < stroke[0].length; i++) {
-            stroke[0][i] = stroke[0][i] - min_x + REPOS_PADDING;
-            stroke[1][i] = stroke[1][i] - min_y + REPOS_PADDING;
-        }
-    }
-};
 
 function updateIframebutton(str_c) {
     const bingFrame = document.getElementById("bingFrame");
     bingFrame.style.display = str_c;
     const showNextPredictionButton = document.getElementById("showNextPrediction");
-    showNextPredictionButton.style.display = str_c;
+    showNextPredictionButton.style.display = str_c;        
 }
 
 let predict_e =[];
@@ -334,7 +329,6 @@ function help_copy_array(obj) {
     if(obj == null || typeof(obj) != 'object') {
       return obj;
     }
-  
     var temp = new obj.constructor();
   
     for(var key in obj) {
@@ -376,9 +370,10 @@ function Speaking() {
 }
 // Hàm dự đoán với việc thêm chức năng đọc kết quả
 const predict = async () => {
-  if (!imageStrokes.length) return;
-  if (!LABELS.length) throw new Error("No labels found!");
-  if (isSpeechSynthesisSupported() && window.speechSynthesis.speaking) {
+  if (!imageStrokes.length) return; // kiểm tra có nét vẽ nào ko
+  if (!LABELS.length)  throw new Error("No labels found"); // kiểm tra có label nào ko 
+  if (isSpeechSynthesisSupported() && window.speechSynthesis.speaking) 
+  {
     window.speechSynthesis.cancel();
   }
   imageStrokes_copy = [];
@@ -389,27 +384,27 @@ const predict = async () => {
 
     top5 = Array.from(predictions)
       .map((p, i) => ({
-        probability: p,
-        className: LABELS[i],
-        index: i,
+        probability: p, // lưu xác suất
+        className: LABELS[i], // lưu classname
+        index: i, //lưu chỉ mục
       }))
       .sort((a, b) => b.probability - a.probability)
       .slice(0, 5);
-
     drawPie(top5);
     predict_e = top5.map(pred => pred.className);
     currentIndex = 0;
     updateIframebutton("inline");
     updateIframe(predict_e[currentIndex]);
     // Kiểm tra tính tương thích với SpeechSynthesis
+    //predict xong nói luôn 
     if (isSpeechSynthesisSupported() && speechEnabled == true) {
+      //nếu hàm speaking đang chạy thì trình duyệt sẽ nói luôn
       Speaking();
     } 
-    else {
+    else 
+    {
     console.log("Trình duyệt không hỗ trợ đọc văn bản.");
     }
-
-    
   });
 };
 

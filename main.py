@@ -21,7 +21,6 @@ async def transform(image_data: ImageData):
     filepath = "./images/" + str(uuid4()) + ".png"
     img = transform_img(image_data.strokes, image_data.box)
     img.save(filepath)
-
     return FileResponse(filepath, background=BackgroundTask(remove, path=filepath))
 
 
@@ -33,13 +32,13 @@ def transform_img(strokes, box):
     width = box[2] - box[0]
     height = box[3] - box[1]
 
-    image = Image.new("RGB", (width, height), color=(255, 255, 255))
+    image = Image.new("RGB", (width, height), color=(255, 255, 255)) #màu trắng
     image_draw = ImageDraw.Draw(image)
-
+    
     for stroke in strokes:
         positions = []
         for i in range(0, len(stroke[0])):
             positions.append((stroke[0][i], stroke[1][i]))
-        image_draw.line(positions, fill=(0, 0, 0), width=3)
+        image_draw.line(positions, fill=(0, 0, 0), width=3)   #màu đen , độ dày là 3
 
     return image.resize((28, 28))
